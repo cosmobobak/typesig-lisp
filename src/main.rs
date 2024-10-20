@@ -92,7 +92,7 @@ where
                     Err(err) => println!("{err:#}"),
                 }
             }
-            line => println!("{line}"),
+            line => println!("{}", tokenise::tokenise(line).stringify()),
         }
 
         if M::INTERACTIVE {

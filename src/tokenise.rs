@@ -1,13 +1,25 @@
+use std::fmt::Display;
+
 
 
 pub const fn tokenise(text: &str) -> TokenStream {
     TokenStream { text, byte: 0 }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct TokenStream<'a> {
     text: &'a str,
     byte: usize,
+}
+
+impl TokenStream<'_> {
+    pub const fn stringify(&self) -> TokenStreamStringifier<'_, '_> {
+        TokenStreamStringifier { ts: self }
+    }
+}
+
+pub struct TokenStreamStringifier<'a, 'b> {
+    ts: &'a TokenStream<'b>,
 }
 
 #[derive(Debug)]
@@ -53,5 +65,32 @@ impl<'a> Iterator for TokenStream<'a> {
                 Some(Token::Literal(token_text))
             }
         }
+    }
+}
+
+impl Display for TokenStreamStringifier<'_, '_> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let mut last_was_literal = false;
+        for token in self.ts.clone() {
+            match token {
+                Token::Literal(lit) => {
+                    if last_was_literal {
+                        write!(f, " ")?;
+                    }
+                    write!(f, "{lit}")?;
+                    last_was_literal = true;
+                }
+                Token::LParen => {
+                    write!(f, "(")?;
+                    last_was_literal = false;
+                }
+                Token::RParen => {
+                    write!(f, ")")?;
+                    last_was_literal = false;
+                }
+            }
+        }
+
+        Ok(())
     }
 }
