@@ -1,5 +1,7 @@
 #![warn(clippy::all, clippy::nursery, clippy::pedantic)]
 
+mod tokenise;
+
 use std::{
     fs::File,
     io::{BufRead, BufReader, Write},
@@ -47,6 +49,7 @@ impl Mode for NonInteractive {
 }
 
 const READ_FILE_PREFIX: &str = "r ";
+const TOKENISE_CMD: &str = ":tokenise ";
 
 fn repl<M, I, E>(input: I) -> Result<()>
 where
@@ -77,6 +80,15 @@ where
                     });
                 match res {
                     Ok(contents) => println!("{contents}"),
+                    Err(err) => println!("{err:#}"),
+                }
+            }
+            stripped if line.starts_with(TOKENISE_CMD) => {
+                let tokens = stripped.strip_prefix(TOKENISE_CMD)
+                    .context("No text provided!")
+                    .map(tokenise::tokenise);
+                match tokens {
+                    Ok(tokens) => println!("{:?}", tokens.collect::<Vec<_>>()),
                     Err(err) => println!("{err:#}"),
                 }
             }
