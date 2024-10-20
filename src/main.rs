@@ -1,6 +1,7 @@
 #![warn(clippy::all, clippy::nursery, clippy::pedantic)]
 
 mod tokenise;
+mod parse;
 
 use std::{
     fs::File,
@@ -50,6 +51,7 @@ impl Mode for NonInteractive {
 
 const READ_FILE_PREFIX: &str = "r ";
 const TOKENISE_CMD: &str = ":tokenise ";
+const PARSE_CMD: &str = ":parse ";
 
 fn repl<M, I, E>(input: I) -> Result<()>
 where
@@ -92,7 +94,17 @@ where
                     Err(err) => println!("{err:#}"),
                 }
             }
-            line => println!("{}", tokenise::tokenise(line).stringify()),
+            stripped if line.starts_with(PARSE_CMD) => {
+                let tree = stripped.strip_prefix(PARSE_CMD)
+                    .context("No text provided!")
+                    .map(tokenise::tokenise)
+                    .map(parse::parse);
+                match tree {
+                    Ok(tree) => println!("{tree}"),
+                    Err(err) => println!("{err:#}"),
+                }
+            }
+            line => println!("{}", parse::parse(tokenise::tokenise(line)).stringify()),
         }
 
         if M::INTERACTIVE {
