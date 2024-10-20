@@ -3,7 +3,8 @@
 use std::{
     fs::File,
     io::{BufRead, BufReader, Write},
-    path::PathBuf, time::Instant,
+    path::PathBuf,
+    time::Instant,
 };
 
 use clap::Parser;
