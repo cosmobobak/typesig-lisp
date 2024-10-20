@@ -1,7 +1,5 @@
 use std::fmt::Display;
 
-
-
 pub const fn tokenise(text: &str) -> TokenStream {
     TokenStream { text, byte: 0 }
 }
@@ -22,11 +20,28 @@ pub struct TokenStreamStringifier<'a, 'b> {
     ts: &'a TokenStream<'b>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum TokenType {
+    Literal,
+    LParen,
+    RParen,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Token<'a> {
     Literal(&'a str),
     LParen,
     RParen,
+}
+
+impl Token<'_> {
+    pub const fn ty(self) -> TokenType {
+        match self {
+            Token::Literal(_) => TokenType::Literal,
+            Token::LParen => TokenType::LParen,
+            Token::RParen => TokenType::RParen,
+        }
+    }
 }
 
 impl<'a> Iterator for TokenStream<'a> {
@@ -70,25 +85,26 @@ impl<'a> Iterator for TokenStream<'a> {
 
 impl Display for TokenStreamStringifier<'_, '_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let mut last_was_literal = false;
+        let mut last = None;
         for token in self.ts.clone() {
             match token {
                 Token::Literal(lit) => {
-                    if last_was_literal {
+                    if matches!(last, Some(TokenType::RParen | TokenType::Literal)) {
                         write!(f, " ")?;
                     }
                     write!(f, "{lit}")?;
-                    last_was_literal = true;
                 }
                 Token::LParen => {
+                    if matches!(last, Some(TokenType::RParen | TokenType::Literal)) {
+                        write!(f, " ")?;
+                    }
                     write!(f, "(")?;
-                    last_was_literal = false;
                 }
                 Token::RParen => {
                     write!(f, ")")?;
-                    last_was_literal = false;
                 }
             }
+            last = Some(token.ty());
         }
 
         Ok(())
