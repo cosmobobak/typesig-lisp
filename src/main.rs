@@ -7,7 +7,7 @@ use std::{
 };
 
 use clap::Parser;
-use color_eyre::eyre::Context;
+use color_eyre::eyre::{Context, ContextCompat};
 use color_eyre::Report;
 use color_eyre::Result;
 
@@ -45,6 +45,8 @@ impl Mode for NonInteractive {
     const INTERACTIVE: bool = false;
 }
 
+const READ_FILE_PREFIX: &str = "r ";
+
 fn repl<M, I, E>(input: I) -> Result<()>
 where
     M: Mode,
@@ -64,6 +66,19 @@ where
             "" => (),
             "quit" | "exit" => return Ok(()),
             ":timing" => state.show_timings = true,
+            stripped if line.starts_with(READ_FILE_PREFIX) => {
+                let file_name = stripped.strip_prefix(READ_FILE_PREFIX);
+                let res = file_name
+                    .context("No file name provided!")
+                    .and_then(|file_name| {
+                        std::fs::read_to_string(file_name)
+                            .with_context(|| format!("Couldn't read {file_name}!"))
+                    });
+                match res {
+                    Ok(contents) => println!("{contents}"),
+                    Err(err) => println!("{err:#}"),
+                }
+            }
             line => println!("{line}"),
         }
 
